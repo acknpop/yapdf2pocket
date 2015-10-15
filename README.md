@@ -1,5 +1,5 @@
 # yapdf2pocket
 
-Yet Another PDF2POCKET.
+Yet Another PDFTOPOCKETmod.
 
 Under construction.
