@@ -2,7 +2,7 @@
 
 ### DESCRIPTION
 
-Yet Another PDF to [PocketMod](http://www.pocketmod.com/) Converter.
+Yet Another PDF to PocketMod Converter.
 
 ### USAGE
 
@@ -14,6 +14,7 @@ The protected PDF cannot be handled.
 
 ### DEPENDENCIES
 
+* C#
 * [iTextSharp](http://sourceforge.net/projects/itextsharp/)
 
 ### BUILD
@@ -24,3 +25,8 @@ Using VisualStudio 2015.
 
 Copyright (C) 2015 acknpop.  
 Licensed under the 3-clause BSD license.
+
+### LINK
+
+* [PocketMod](http://www.pocketmod.com/)
+* [re:PocketMod](http://repocketmod.com/)
