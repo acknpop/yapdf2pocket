@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2015, acknpop
+Copyright (c) 2015-2016 acknpop
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -27,7 +27,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 using System;
-using System.Data;
 using System.Windows.Forms;
 using iTextSharp.text;
 using iTextSharp.text.pdf;
@@ -124,29 +123,22 @@ namespace yapdf2pocket
             try
             {
 
-                iTextSharp.text.Rectangle dst = PageSize.GetRectangle(comboBox1.SelectedItem.ToString());
-
-                Document doc = new Document(dst);
-
-                PdfWriter pw = PdfWriter.GetInstance(doc, new FileStream(sfd.FileName, FileMode.Create));
-
+                var dst = PageSize.GetRectangle(comboBox1.SelectedItem.ToString());
+                var doc = new Document(dst);
+                var pw = PdfWriter.GetInstance(doc, new FileStream(sfd.FileName, FileMode.Create));
                 doc.Open();
 
-                for (int i = 1; i <= pr.NumberOfPages; i++)
+                for (var page = 1; page <= pr.NumberOfPages; page++)
                 {
-                    if (i % 8 == 1) doc.NewPage();
+                    if (page % 8 == 1) doc.NewPage();
 
-                    PdfContentByte pcb = pw.DirectContent;
-
-                    iTextSharp.text.Rectangle src = pr.GetPageSizeWithRotation(i);
-
-                    int rot = pr.GetPageRotation(i);
+                    var pcb = pw.DirectContent;
+                    var src = pr.GetPageSizeWithRotation(page);
+                    int rot = pr.GetPageRotation(page);
 
                     bool isLandscape = (src.Width > src.Height) ? true : false;
-
                     float scale;
                     float offset;
-
                     if ((isLandscape) && (rot == 90 || rot == 270))
                     {
                         scale = dst.Height / (src.Height * 4);
@@ -158,129 +150,121 @@ namespace yapdf2pocket
                         offset = (dst.Width / 2 - (scale * src.Height)) / 2;
                     }
 
-                    PdfImportedPage page;
-                    page = pw.GetImportedPage(pr, i);
+                    // For scaling and rotation
+                    var transRotate = new iTextSharp.awt.geom.AffineTransform();
+                    transRotate.SetToIdentity();
+                    transRotate.Scale(scale, scale);
+
+                    // For position
+                    var transAdjust = new iTextSharp.awt.geom.AffineTransform();
+                    transAdjust.SetToIdentity();
 
                     // Affine translation of PocketMod style.
                     if ((rot == 90 || rot == 270) && !isLandscape)
                     {
-                        switch (i % 8)
+                        var px = dst.Width / 2;
+                        var py = dst.Height / 4;
+                        var rads = 180 * Math.PI / 180;
+                        switch (page % 8)
                         {
                             // LEFT SIDE
+                            // Rotate 180 degrees
                             case 1:
-                                pcb.AddTemplate(page,
-                                    -scale, 0f, 0f, -scale,
-                                    (dst.Width / 2) - offset, dst.Height);
+                                transAdjust.Translate(px - offset, py * 4);
+                                transRotate.Rotate(-rads);
+                                break;
+                            case 0: // as 8
+                                transAdjust.Translate(px - offset, py * 3);
+                                transRotate.Rotate(-rads);
+                                break;
+                            case 7:
+                                transAdjust.Translate(px - offset, py * 2);
+                                transRotate.Rotate(-rads);
+                                break;
+                            case 6:
+                                transAdjust.Translate(px - offset, py);
+                                transRotate.Rotate(-rads);
                                 break;
 
                             // RIGHT SIDE
+                            // no rotation
                             case 2:
-                                pcb.AddTemplate(page,
-                                    scale, 0f, 0f, scale,
-                                    (dst.Width / 2) + offset, dst.Height * 3 / 4);
+                                transAdjust.Translate(px + offset, py * 3);
                                 break;
                             case 3:
-                                pcb.AddTemplate(page,
-                                    scale, 0f, 0f, scale,
-                                    (dst.Width / 2) + offset, dst.Height * 2 / 4);
+                                transAdjust.Translate(px + offset, py * 2);
                                 break;
                             case 4:
-                                pcb.AddTemplate(page,
-                                    scale, 0f, 0f, scale,
-                                    (dst.Width / 2) + offset, dst.Height / 4);
+                                transAdjust.Translate(px + offset, py);
                                 break;
                             case 5:
-                                pcb.AddTemplate(page,
-                                    scale, 0f, 0f, scale,
-                                    (dst.Width / 2) + offset, 0);
-                                break;
-
-                            // LEFT SIDE
-                            case 6:
-                                pcb.AddTemplate(page,
-                                    -scale, 0f, 0f, -scale,
-                                    (dst.Width / 2) - offset, dst.Height / 4);
-                                break;
-                            case 7:
-                                pcb.AddTemplate(page,
-                                    -scale, 0f, 0f, -scale,
-                                    (dst.Width / 2) - offset, dst.Height * 2 / 4);
-                                break;
-                            case 0:
-                                pcb.AddTemplate(page,
-                                    -scale, 0f, 0f, -scale,
-                                    (dst.Width / 2) - offset, dst.Height * 3 / 4);
+                                transAdjust.Translate(px + offset, 0);
                                 break;
                         }
 
                     }
                     else
                     {
-                        switch (i % 8)
+                        var px = dst.Width / 2;
+                        var py = dst.Height / 4;
+                        var rads = 90 * Math.PI / 180;
+
+                        switch (page % 8)
                         {
                             // LEFT SIDE
+                            // Rotate counterclockwise 90 degrees
                             case 1:
-                                // Counterclockwise 90 degrees
-                                pcb.AddTemplate(page,
-                                    0f, scale, -scale, 0f,
-                                    (dst.Width / 2) - offset, dst.Height * 3 / 4);
+                                transAdjust.Translate(px - offset, py * 3);
+                                transRotate.Rotate(rads);
+                                break;
+                            case 0: // as 8
+                                transAdjust.Translate(px - offset, py * 2);
+                                transRotate.Rotate(rads);
+                                break;
+                            case 7:
+                                transAdjust.Translate(px - offset, py);
+                                transRotate.Rotate(rads);
+                                break;
+                            case 6:
+                                transAdjust.Translate(px - offset, 0);
+                                transRotate.Rotate(rads);
                                 break;
 
                             // RIGHT SIDE
+                            // Rotate clockwise 90 degrees
                             case 2:
-                                // Clockwise 90 degrees
-                                pcb.AddTemplate(page,
-                                    0f, -scale, scale, 0f,
-                                    (dst.Width / 2) + offset, dst.Height);
+                                transAdjust.Translate(px + offset, py * 4);
+                                transRotate.Rotate(-rads);
                                 break;
                             case 3:
-                                // Clockwise 90 degrees
-                                pcb.AddTemplate(page,
-                                    0f, -scale, scale, 0f,
-                                    (dst.Width / 2) + offset, dst.Height * 3 / 4);
+                                transAdjust.Translate(px + offset, py * 3);
+                                transRotate.Rotate(-rads);
                                 break;
                             case 4:
-                                // Clockwise 90 degrees
-                                pcb.AddTemplate(page,
-                                    0f, -scale, scale, 0f,
-                                    (dst.Width / 2) + offset, dst.Height * 2 / 4);
+                                transAdjust.Translate(px + offset, py * 2);
+                                transRotate.Rotate(-rads);
                                 break;
                             case 5:
-                                // Clockwise 90 degrees
-                                pcb.AddTemplate(page,
-                                    0f, -scale, scale, 0f,
-                                    (dst.Width / 2) + offset, dst.Height / 4);
-                                break;
-
-                            // LEFT SIDE
-                            case 6:
-                                // Counterclockwise 90 degrees
-                                pcb.AddTemplate(page,
-                                    0f, scale, -scale, 0f,
-                                    (dst.Width / 2) - offset, 0);
-                                break;
-                            case 7:
-                                // Counterclockwise 90 degrees
-                                pcb.AddTemplate(page,
-                                    0f, scale, -scale, 0f,
-                                    (dst.Width / 2) - offset, dst.Height / 4);
-                                break;
-                            case 0:
-                                // Counterclockwise 90 degrees
-                                pcb.AddTemplate(page,
-                                    0f, scale, -scale, 0f,
-                                    (dst.Width / 2) - offset, dst.Height * 2 / 4);
+                                transAdjust.Translate(px + offset, py);
+                                transRotate.Rotate(-rads);
                                 break;
                         }
 
                     }
+                    var finalTrans = new iTextSharp.awt.geom.AffineTransform();
+                    finalTrans.SetToIdentity();
+                    finalTrans.Concatenate(transAdjust);
+                    finalTrans.Concatenate(transRotate);
 
+                    var importedPage = pw.GetImportedPage(pr, page);
+                    pcb.AddTemplate(importedPage, finalTrans);
 
-                    if ((i % 8 == 0)||(i == pr.NumberOfPages))
+                    if ((page % 8 == 0)||(page == pr.NumberOfPages))
                     {
                         // Draw guide line for folding.
                         pcb.SetLineWidth(0.01f);
 
+                        // Outside frame
                         if (checkBox1.Checked)
                         {
                             pcb.MoveTo(0f, 0f);
