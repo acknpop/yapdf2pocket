@@ -133,13 +133,13 @@ namespace yapdf2pocket
                     if (page % 8 == 1) doc.NewPage();
 
                     var pcb = pw.DirectContent;
-                    var src = pr.GetPageSizeWithRotation(page);
+                    var src = pr.GetPageSize(page);
                     int rot = pr.GetPageRotation(page);
 
                     bool isLandscape = (src.Width > src.Height) ? true : false;
                     float scale;
                     float offset;
-                    if ((isLandscape) && (rot == 90 || rot == 270))
+                    if (isLandscape)
                     {
                         scale = dst.Height / (src.Height * 4);
                         offset = (dst.Width / 2 - (scale * src.Width)) / 2;
@@ -160,11 +160,12 @@ namespace yapdf2pocket
                     transAdjust.SetToIdentity();
 
                     // Affine translation of PocketMod style.
-                    if ((rot == 90 || rot == 270) && !isLandscape)
+                    if (isLandscape || (rot == 90 || rot == 270))
                     {
                         var px = dst.Width / 2;
                         var py = dst.Height / 4;
                         var rads = 180 * Math.PI / 180;
+
                         switch (page % 8)
                         {
                             // LEFT SIDE
